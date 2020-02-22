@@ -659,7 +659,67 @@ var imports = {
   SimplexNoise: require("simplex-noise")
 };
 exports.imports = imports;
-},{"simplex-noise":"../node_modules/simplex-noise/simplex-noise.js"}],"js/Class/Sprite.js":[function(require,module,exports) {
+},{"simplex-noise":"../node_modules/simplex-noise/simplex-noise.js"}],"js/tileset.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.tileset = void 0;
+var tileset = {
+  "grass": {
+    spriteName: "terrain",
+    spriteX: 0,
+    spriteY: 0,
+    x: +0,
+    y: +0
+  },
+  "tree": [{
+    spriteName: "terrain",
+    spriteX: 0,
+    spriteY: 1,
+    x: +0,
+    y: +0
+  }, {
+    spriteName: "terrain",
+    spriteX: 1,
+    spriteY: 1,
+    x: +32,
+    y: +0
+  }, {
+    spriteName: "terrain",
+    spriteX: 0,
+    spriteY: 2,
+    x: +0,
+    y: +32
+  }, {
+    spriteName: "terrain",
+    spriteX: 1,
+    spriteY: 2,
+    x: +32,
+    y: +32
+  }]
+};
+exports.tileset = tileset;
+},{}],"images/terrain.png":[function(require,module,exports) {
+module.exports = "/terrain.53086dea.png";
+},{}],"js/spritelist.js":[function(require,module,exports) {
+"use strict";
+
+Object.defineProperty(exports, "__esModule", {
+  value: true
+});
+exports.spriteList = void 0;
+
+var _terrain = _interopRequireDefault(require("../images/terrain.png"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+var spriteList = {
+  "terrain": _terrain.default
+};
+exports.spriteList = spriteList;
+},{"../images/terrain.png":"images/terrain.png"}],"js/Class/Sprite.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -837,25 +897,78 @@ function (_GameElement) {
 }(_GameElement2.GameElement);
 
 exports.Tile = Tile;
-},{"./GameElement":"js/Class/GameElement.js"}],"images/terrain.png":[function(require,module,exports) {
-module.exports = "/terrain.53086dea.png";
-},{}],"js/spritelist.js":[function(require,module,exports) {
+},{"./GameElement":"js/Class/GameElement.js"}],"js/Class/TilesetElement.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
   value: true
 });
-exports.spriteList = void 0;
+exports.TilesetElement = void 0;
 
-var _terrain = _interopRequireDefault(require("../images/terrain.png"));
+var _Tile = require("./Tile");
 
-function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+function _classCallCheck(instance, Constructor) { if (!(instance instanceof Constructor)) { throw new TypeError("Cannot call a class as a function"); } }
 
-var spriteList = {
-  "terrain": _terrain.default
-};
-exports.spriteList = spriteList;
-},{"../images/terrain.png":"images/terrain.png"}],"js/game.js":[function(require,module,exports) {
+function _defineProperties(target, props) { for (var i = 0; i < props.length; i++) { var descriptor = props[i]; descriptor.enumerable = descriptor.enumerable || false; descriptor.configurable = true; if ("value" in descriptor) descriptor.writable = true; Object.defineProperty(target, descriptor.key, descriptor); } }
+
+function _createClass(Constructor, protoProps, staticProps) { if (protoProps) _defineProperties(Constructor.prototype, protoProps); if (staticProps) _defineProperties(Constructor, staticProps); return Constructor; }
+
+var TilesetElement =
+/*#__PURE__*/
+function () {
+  function TilesetElement(game) {
+    var options = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : {};
+
+    _classCallCheck(this, TilesetElement);
+
+    this.game = game;
+    this.x = 0;
+    this.y = 0;
+    this.tiles = [];
+
+    if (options) {
+      for (var key in options) {
+        this[key] = options[key];
+      }
+    }
+
+    if (!this.tilesetType) this.tilesetType = "grass";
+    if (!this.game.tileset.hasOwnProperty(this.tilesetType)) return;
+    this.buildTiles(this.game.tileset[this.tilesetType]);
+  }
+
+  _createClass(TilesetElement, [{
+    key: "buildTiles",
+    value: function buildTiles(tileset) {
+      var _this = this;
+
+      if (Array.isArray(tileset)) {
+        tileset.forEach(function (tl) {
+          _this.buildTiles(tl);
+        });
+      }
+
+      var nt = new _Tile.Tile(this.game, tileset.spriteName);
+      nt.x = tileset.x + this.x;
+      nt.y = tileset.y + this.y;
+      nt.sprite.x = tileset.spriteX;
+      nt.sprite.y = tileset.spriteY;
+      this.tiles.push(nt);
+    }
+  }, {
+    key: "update",
+    value: function update() {
+      this.tiles.forEach(function (tile) {
+        tile.update();
+      });
+    }
+  }]);
+
+  return TilesetElement;
+}();
+
+exports.TilesetElement = TilesetElement;
+},{"./Tile":"js/Class/Tile.js"}],"js/game.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -867,17 +980,21 @@ var _controllers = require("./controllers");
 
 var _imports = require("./imports");
 
-var _Tile = require("./Class/Tile");
+var _tileset = require("./tileset");
 
 var _spritelist = require("./spritelist");
+
+var _TilesetElement = require("./Class/TilesetElement");
 
 var game = {
   canvas: document.querySelector("#game"),
   ctx: undefined,
   datas: {
     frame: 0,
-    tiles: []
+    tiles: [],
+    elements: []
   },
+  tileset: _tileset.tileset,
   spriteList: _spritelist.spriteList,
   controllers: _controllers.controllers,
   imports: _imports.imports,
@@ -886,20 +1003,10 @@ var game = {
     var h = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 720;
     this.ctx = this.canvas.getContext("2d");
     this.controllers.init(this);
-    this.datas.tiles.push(new _Tile.Tile(game), new _Tile.Tile(game), new _Tile.Tile(game), new _Tile.Tile(game));
-    this.datas.tiles[0].sprite.y = 1;
-    this.datas.tiles[1].sprite.x = 1;
-    this.datas.tiles[1].sprite.y = 1;
-    this.datas.tiles[1].y = 0;
-    this.datas.tiles[1].x = 32;
-    this.datas.tiles[2].sprite.x = 0;
-    this.datas.tiles[2].sprite.y = 2;
-    this.datas.tiles[2].y = 32;
-    this.datas.tiles[2].x = 0;
-    this.datas.tiles[3].sprite.x = 1;
-    this.datas.tiles[3].sprite.y = 2;
-    this.datas.tiles[3].y = 32;
-    this.datas.tiles[3].x = 32;
+    this.datas.elements.push(new _TilesetElement.TilesetElement(game, {
+      tilesetType: "tree",
+      y: 0
+    }));
     this.update();
   },
   update: function update() {
@@ -907,8 +1014,8 @@ var game = {
 
     if (this.controllers.isDown("d")) {}
 
-    this.datas.tiles.forEach(function (tile) {
-      tile.update();
+    this.datas.elements.forEach(function (element) {
+      element.update();
     });
     this.controllers.update();
     window.requestAnimationFrame(function (e) {
@@ -919,7 +1026,7 @@ var game = {
   }
 };
 exports.game = game;
-},{"./controllers":"js/controllers.js","./imports":"js/imports.js","./Class/Tile":"js/Class/Tile.js","./spritelist":"js/spritelist.js"}],"main.js":[function(require,module,exports) {
+},{"./controllers":"js/controllers.js","./imports":"js/imports.js","./tileset":"js/tileset.js","./spritelist":"js/spritelist.js","./Class/TilesetElement":"js/Class/TilesetElement.js"}],"main.js":[function(require,module,exports) {
 "use strict";
 
 var _game = require("./js/game");
@@ -953,7 +1060,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "38151" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "34813" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};
