@@ -1,38 +1,40 @@
 export const controllers = {
-    mouse:{
-        left:false,
-        x:undefined,
-        y:undefined
+    mouse: {
+        left: false,
+        x: undefined,
+        y: undefined
     },
-    keyPressed:[],
-    keyAllowed:["z", "q", "s", "d"],
-    init(game){
+    keyPressed: [],
+    keyAllowed: ["z", "q", "s", "d"],
+    init(game) {
         this.game = game;
-        window.addEventListener("keydown", e=>{this.keyDown(e)}, false);
-        window.addEventListener("keyup", e=>{this.keyUp(e)}, false);
+        window.addEventListener("keydown", e => { this.keyDown(e) }, false);
+        window.addEventListener("keyup", e => { this.keyUp(e) }, false);
     },
-    keyDown(e){
+    keyDown(e) {
         const key = e.key
-        if(this.keyAllowed.indexOf(key) != -1 && this.keyPressed.indexOf(key) == -1){
+        if (this.keyAllowed.indexOf(key) != -1 && this.keyPressed.indexOf(key) == -1) {
             this.keyPressed.push(key)
         }
     },
-    keyUp(e){
+    keyUp(e) {
         const key = e.key
-        if(this.keyAllowed.indexOf(key) != -1){
+        if (this.keyAllowed.indexOf(key) != -1) {
             this.keyPressed.splice(this.keyPressed.indexOf(key), 1)
         }
     },
-    isDown(key){
-        if(this.keyPressed.indexOf(key) != -1){
+    isDown(key) {
+        if (this.keyPressed.indexOf(key) != -1) {
+
             return true
         }
+
         return false
     },
-    isUp(key){
+    isUp(key) {
         return !this.isDown(key)
     },
-    update(){
+    update() {
         this.mouse.left = false
     }
 }

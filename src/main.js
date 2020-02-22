@@ -1,3 +1,4 @@
-import {game} from './js/game'
+import { game } from './js/game'
+
 
 game.init()
