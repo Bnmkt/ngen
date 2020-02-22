@@ -1,0 +1,12 @@
+- Animation system
+- Tiles system
+    - Can tiles have a Z coord ?
+    - Create tiles : [
+        Air,
+        Grass,
+        Water,
+        Stone,
+        ...
+    ]
+- tiles generation using Simplex Noise
+- biomes using voronoi
