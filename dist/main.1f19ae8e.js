@@ -656,7 +656,17 @@ Object.defineProperty(exports, "__esModule", {
 });
 exports.imports = void 0;
 var imports = {
-  SimplexNoise: require("simplex-noise")
+  SimplexNoise: require("simplex-noise"),
+  str2seed: function str2seed(str) {
+    var a = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'y'];
+    var c = 0,
+        d = 0;
+    str.split('').forEach(function (b) {
+      c += a.indexOf(b.toLowerCase()) + d;
+      d++;
+    });
+    return Math.round(c * Math.PI * 1024);
+  }
 };
 exports.imports = imports;
 },{"simplex-noise":"../node_modules/simplex-noise/simplex-noise.js"}],"js/tileset.js":[function(require,module,exports) {
@@ -674,7 +684,35 @@ var tileset = {
     x: +0,
     y: +0
   },
-  "tree": [{
+  "sand": {
+    spriteName: "terrain",
+    spriteX: 6,
+    spriteY: 0,
+    x: +0,
+    y: +0
+  },
+  "rock": {
+    spriteName: "terrain",
+    spriteX: 5,
+    spriteY: 0,
+    x: +0,
+    y: +0
+  },
+  "deepwater": {
+    spriteName: "water",
+    spriteX: 6,
+    spriteY: 1,
+    x: +0,
+    y: +0
+  },
+  "water": {
+    spriteName: "lowwater",
+    spriteX: 6,
+    spriteY: 1,
+    x: +0,
+    y: +0
+  },
+  "tree": [[{
     spriteName: "terrain",
     spriteX: 0,
     spriteY: 1,
@@ -686,7 +724,7 @@ var tileset = {
     spriteY: 1,
     x: +32,
     y: +0
-  }, {
+  }], [{
     spriteName: "terrain",
     spriteX: 0,
     spriteY: 2,
@@ -698,11 +736,15 @@ var tileset = {
     spriteY: 2,
     x: +32,
     y: +32
-  }]
+  }]]
 };
 exports.tileset = tileset;
 },{}],"images/terrain.png":[function(require,module,exports) {
 module.exports = "/terrain.53086dea.png";
+},{}],"images/water.png":[function(require,module,exports) {
+module.exports = "/water.06f3a54a.png";
+},{}],"images/water2.png":[function(require,module,exports) {
+module.exports = "/water2.cd526ff3.png";
 },{}],"js/spritelist.js":[function(require,module,exports) {
 "use strict";
 
@@ -713,13 +755,19 @@ exports.spriteList = void 0;
 
 var _terrain = _interopRequireDefault(require("../images/terrain.png"));
 
+var _water = _interopRequireDefault(require("../images/water.png"));
+
+var _water2 = _interopRequireDefault(require("../images/water2.png"));
+
 function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
 
 var spriteList = {
-  "terrain": _terrain.default
+  terrain: _terrain.default,
+  water: _water.default,
+  lowwater: _water2.default
 };
 exports.spriteList = spriteList;
-},{"../images/terrain.png":"images/terrain.png"}],"js/Class/Sprite.js":[function(require,module,exports) {
+},{"../images/terrain.png":"images/terrain.png","../images/water.png":"images/water.png","../images/water2.png":"images/water2.png"}],"js/Class/Sprite.js":[function(require,module,exports) {
 "use strict";
 
 Object.defineProperty(exports, "__esModule", {
@@ -833,7 +881,10 @@ function () {
           dw = _this$sprite$drawable2[7],
           dh = _this$sprite$drawable2[8];
 
+      this.game.ctx.save();
+      this.game.ctx.filter = this.filter || "none";
       this.game.ctx.drawImage(image, sx, sy, sw, sh, this.x, this.y, dw, dh);
+      this.game.ctx.restore();
     }
   }, {
     key: "update",
@@ -953,6 +1004,7 @@ function () {
       nt.y = tileset.y + this.y;
       nt.sprite.x = tileset.spriteX;
       nt.sprite.y = tileset.spriteY;
+      nt.filter = this.filter;
       this.tiles.push(nt);
     }
   }, {
@@ -992,7 +1044,16 @@ var game = {
   datas: {
     frame: 0,
     tiles: [],
-    elements: []
+    elements: [],
+    noise: undefined,
+    map: {
+      "base": [],
+      "el": []
+    },
+    viewport: {
+      x: 1,
+      y: 1
+    }
   },
   tileset: _tileset.tileset,
   spriteList: _spritelist.spriteList,
@@ -1001,22 +1062,88 @@ var game = {
   init: function init() {
     var w = arguments.length > 0 && arguments[0] !== undefined ? arguments[0] : 1280;
     var h = arguments.length > 1 && arguments[1] !== undefined ? arguments[1] : 720;
+    this.canvas.width = w;
+    this.canvas.height = h;
     this.ctx = this.canvas.getContext("2d");
     this.controllers.init(this);
-    this.datas.elements.push(new _TilesetElement.TilesetElement(game, {
-      tilesetType: "tree",
-      y: 0
-    }));
+    this.seed = this.config.seed ? this.imports.str2seed(this.config.seed) : Math.random();
+    this.datas.offsetOne = new this.imports.SimplexNoise(this.seed);
+    this.datas.offsetTwo = new this.imports.SimplexNoise(this.seed * Math.PI);
+    this.datas.offsetThree = new this.imports.SimplexNoise(this.seed / Math.PI);
+
+    for (var y = 0; y < this.canvas.height / 32; y++) {
+      this.datas.map["base"][y] = [];
+
+      for (var x = 0; x < this.canvas.width / 32; x++) {
+        var offsetOne = this.datas.offsetOne.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
+        var offsetTwo = this.datas.offsetTwo.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
+        var offsetThree = this.datas.offsetThree.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
+        var nVal = (offsetOne + offsetTwo * 2 * offsetThree * 2) / 2; //const nVal = offsetOne
+
+        var tileType = void 0;
+        var filter = void 0;
+
+        if (nVal <= this.config.waterLevel - this.config.waterOffset) {
+          //nVal*=-offsetOne
+          tileType = "water";
+          filter = "hue-rotate(".concat(340 + (10 - Math.min(-.0001, nVal) * 10), "deg) brightness(").concat(100 + Math.min(-.0001, nVal) * 50, "%)");
+        } else if (nVal < this.config.waterLevel) {
+          tileType = "water";
+          filter = "hue-rotate(-10deg)";
+        } else if (nVal < this.config.waterLevel + this.config.waterErodeOffset) {
+          tileType = "sand";
+        } else if (nVal < .6) {
+          tileType = "grass";
+        }
+
+        this.datas.map["base"][y].push(new _TilesetElement.TilesetElement(this, {
+          "tilesetType": tileType,
+          x: x * 32,
+          y: y * 32,
+          filter: filter
+        }));
+      }
+    }
+
+    for (var _y = 0; _y < this.datas.map["base"].length; _y++) {
+      this.datas.map["el"][_y] = [];
+
+      for (var _x = 0; _x < this.datas.map["base"][_y].length; _x++) {
+        this.datas.map["el"][_y][_x] = null;
+        if (!this.datas.map["base"][_y + 1]) continue;
+        if (this.datas.map["base"][_y + 1][_x].tilesetType === "grass" && Math.random() > 1 - this.config.treePercentage) this.datas.map["el"][_y][_x] = new _TilesetElement.TilesetElement(this, {
+          tilesetType: "tree",
+          x: _x * 32,
+          y: _y * 32
+        });
+      }
+    }
+
+    console.log(this);
     this.update();
   },
   update: function update() {
     var _this = this;
 
-    if (this.controllers.isDown("d")) {}
+    this.ctx.clearRect(0, 0, this.canvas.width, this.canvas.height);
+
+    if (this.controllers.isDown("d")) {
+      this.datas.viewport.x++;
+    }
 
     this.datas.elements.forEach(function (element) {
       element.update();
     });
+
+    for (var layer in this.datas.map) {
+      for (var y = 0; y < this.datas.map[layer].length; y++) {
+        for (var x = 0; x < this.datas.map[layer][y].length; x++) {
+          if (!this.datas.map[layer][y][x]) continue;
+          this.datas.map[layer][y][x].update();
+        }
+      }
+    }
+
     this.controllers.update();
     window.requestAnimationFrame(function (e) {
       _this.datas.frame++;
@@ -1026,13 +1153,31 @@ var game = {
   }
 };
 exports.game = game;
-},{"./controllers":"js/controllers.js","./imports":"js/imports.js","./tileset":"js/tileset.js","./spritelist":"js/spritelist.js","./Class/TilesetElement":"js/Class/TilesetElement.js"}],"main.js":[function(require,module,exports) {
+},{"./controllers":"js/controllers.js","./imports":"js/imports.js","./tileset":"js/tileset.js","./spritelist":"js/spritelist.js","./Class/TilesetElement":"js/Class/TilesetElement.js"}],"js/gameConfig.json":[function(require,module,exports) {
+module.exports = {
+  "waterLevel": .1,
+  "waterOffset": .1,
+  "waterErodeOffset": .045,
+  "treePercentage": .1,
+  "groundOffset": .2,
+  "mapView": 256,
+  "seed": null,
+  "gameWidth": null,
+  "gameHeight": null
+};
+},{}],"main.js":[function(require,module,exports) {
 "use strict";
 
 var _game = require("./js/game");
 
-_game.game.init();
-},{"./js/game":"js/game.js"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
+var _gameConfig = _interopRequireDefault(require("./js/gameConfig.json"));
+
+function _interopRequireDefault(obj) { return obj && obj.__esModule ? obj : { default: obj }; }
+
+_game.game.config = _gameConfig.default;
+
+_game.game.init(_gameConfig.default.gameWidth || window.innerWidth, _gameConfig.default.gameHeight || window.innerHeight);
+},{"./js/game":"js/game.js","./js/gameConfig.json":"js/gameConfig.json"}],"../node_modules/parcel-bundler/src/builtins/hmr-runtime.js":[function(require,module,exports) {
 var global = arguments[3];
 var OVERLAY_ID = '__parcel__error__overlay__';
 var OldModule = module.bundle.Module;
@@ -1060,7 +1205,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "34813" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "51601" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

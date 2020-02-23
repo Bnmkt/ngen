@@ -1,0 +1,11 @@
+{
+    "waterLevel":.1,
+    "waterOffset":.1,
+    "waterErodeOffset":.045,
+    "treePercentage":.1,
+    "groundOffset":.2,
+    "mapView": 256,
+    "seed": null,
+    "gameWidth": null,
+    "gameHeight": null
+}

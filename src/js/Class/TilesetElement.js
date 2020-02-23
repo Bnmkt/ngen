@@ -26,6 +26,7 @@ export class TilesetElement {
         nt.y = tileset.y + this.y
         nt.sprite.x = tileset.spriteX
         nt.sprite.y = tileset.spriteY
+        nt.filter = this.filter;
         this.tiles.push(nt);
     }
     update() {
