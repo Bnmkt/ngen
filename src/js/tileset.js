@@ -16,7 +16,7 @@ export const tileset = {
     },
     "rock": {
         spriteName: "terrain",
-        spriteX: 5,
+        spriteX: 0,
         spriteY: 0,
         x: +0,
         y: +0
@@ -47,7 +47,7 @@ export const tileset = {
                 spriteName: "terrain",
                 spriteX: 1,
                 spriteY: 1,
-                x: +32,
+                x: +1,
                 y: +0
             }
         ],
@@ -56,14 +56,14 @@ export const tileset = {
                 spriteX: 0,
                 spriteY: 2,
                 x: +0,
-                y: +32
+                y: +1
             },
             {
                 spriteName: "terrain",
                 spriteX: 1,
                 spriteY: 2,
-                x: +32,
-                y: +32
+                x: +1,
+                y: +1
             }
         ]
     ]

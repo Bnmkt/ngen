@@ -22,8 +22,8 @@ export class TilesetElement {
             })
         }
         const nt = new Tile(this.game, tileset.spriteName)
-        nt.x = tileset.x + this.x
-        nt.y = tileset.y + this.y
+        nt.x = tileset.x*this.game.config.tileSize + this.x
+        nt.y = tileset.y*this.game.config.tileSize + this.y
         nt.sprite.x = tileset.spriteX
         nt.sprite.y = tileset.spriteY
         nt.filter = this.filter;

@@ -658,11 +658,11 @@ exports.imports = void 0;
 var imports = {
   SimplexNoise: require("simplex-noise"),
   str2seed: function str2seed(str) {
-    var a = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'y'];
+    var a = ['a', 'b', 'c', 'd', 'e', 'f', 'g', 'h', 'i', 'j', 'k', 'l', 'm', 'n', 'o', 'p', 'q', 'r', 's', 't', 'u', 'v', 'w', 'x', 'y', 'z'];
     var c = 0,
         d = 0;
-    str.split('').forEach(function (b) {
-      c += a.indexOf(b.toLowerCase()) + d;
+    str.split('').forEach(function (b, i) {
+      c += a.indexOf(b.toLowerCase()) + d * i;
       d++;
     });
     return Math.round(c * Math.PI * 1024);
@@ -693,7 +693,7 @@ var tileset = {
   },
   "rock": {
     spriteName: "terrain",
-    spriteX: 5,
+    spriteX: 0,
     spriteY: 0,
     x: +0,
     y: +0
@@ -722,20 +722,20 @@ var tileset = {
     spriteName: "terrain",
     spriteX: 1,
     spriteY: 1,
-    x: +32,
+    x: +1,
     y: +0
   }], [{
     spriteName: "terrain",
     spriteX: 0,
     spriteY: 2,
     x: +0,
-    y: +32
+    y: +1
   }, {
     spriteName: "terrain",
     spriteX: 1,
     spriteY: 2,
-    x: +32,
-    y: +32
+    x: +1,
+    y: +1
   }]]
 };
 exports.tileset = tileset;
@@ -937,10 +937,10 @@ function (_GameElement) {
     _classCallCheck(this, Tile);
 
     _this = _possibleConstructorReturn(this, _getPrototypeOf(Tile).call(this, game, spriteSrc));
-    _this.sprite.sw = 32;
-    _this.sprite.sh = 32;
-    _this.sprite.dw = 32;
-    _this.sprite.dh = 32;
+    _this.sprite.sw = _this.game.config.fileTileSize;
+    _this.sprite.sh = _this.game.config.fileTileSize;
+    _this.sprite.dw = _this.game.config.tileSize;
+    _this.sprite.dh = _this.game.config.tileSize;
     return _this;
   }
 
@@ -1000,8 +1000,8 @@ function () {
       }
 
       var nt = new _Tile.Tile(this.game, tileset.spriteName);
-      nt.x = tileset.x + this.x;
-      nt.y = tileset.y + this.y;
+      nt.x = tileset.x * this.game.config.tileSize + this.x;
+      nt.y = tileset.y * this.game.config.tileSize + this.y;
       nt.sprite.x = tileset.spriteX;
       nt.sprite.y = tileset.spriteY;
       nt.filter = this.filter;
@@ -1066,19 +1066,19 @@ var game = {
     this.canvas.height = h;
     this.ctx = this.canvas.getContext("2d");
     this.controllers.init(this);
-    this.seed = this.config.seed ? this.imports.str2seed(this.config.seed) : Math.random();
+    this.seed = this.config.seed ? parseInt(this.config.seed).toString() !== "NaN" ? parseInt(this.config.seed) : this.imports.str2seed(this.config.seed) : this.imports.str2seed(Math.random().toString(36).substring(7));
     this.datas.offsetOne = new this.imports.SimplexNoise(this.seed);
     this.datas.offsetTwo = new this.imports.SimplexNoise(this.seed * Math.PI);
     this.datas.offsetThree = new this.imports.SimplexNoise(this.seed / Math.PI);
 
-    for (var y = 0; y < this.canvas.height / 32; y++) {
+    for (var y = 0; y < this.canvas.height / this.config.tileSize; y++) {
       this.datas.map["base"][y] = [];
 
-      for (var x = 0; x < this.canvas.width / 32; x++) {
+      for (var x = 0; x < this.canvas.width / this.config.tileSize; x++) {
         var offsetOne = this.datas.offsetOne.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
         var offsetTwo = this.datas.offsetTwo.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
         var offsetThree = this.datas.offsetThree.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
-        var nVal = (offsetOne + offsetTwo * 2 * offsetThree * 2) / 2; //const nVal = offsetOne
+        var nVal = (offsetOne * this.config.offsetOneImportance + offsetTwo * this.config.offsetTwoImportance * offsetThree * this.config.offsetThreeImportance) / 2; //const nVal = offsetOne
 
         var tileType = void 0;
         var filter = void 0;
@@ -1094,12 +1094,19 @@ var game = {
           tileType = "sand";
         } else if (nVal < .6) {
           tileType = "grass";
+          filter = "brightness(".concat(100 - (nVal - .6) * 40, "%)");
+        } else if (nVal < 1.5) {
+          tileType = "rock";
+          filter = "hue-rotate(".concat(-(nVal - .6) * 60, "deg) brightness(").concat(100 - (nVal - .6) * 60, "%)");
+        } else {
+          tileType = "rock";
+          filter = "brightness(200)";
         }
 
         this.datas.map["base"][y].push(new _TilesetElement.TilesetElement(this, {
           "tilesetType": tileType,
-          x: x * 32,
-          y: y * 32,
+          x: x * this.config.tileSize,
+          y: y * this.config.tileSize,
           filter: filter
         }));
       }
@@ -1113,8 +1120,8 @@ var game = {
         if (!this.datas.map["base"][_y + 1]) continue;
         if (this.datas.map["base"][_y + 1][_x].tilesetType === "grass" && Math.random() > 1 - this.config.treePercentage) this.datas.map["el"][_y][_x] = new _TilesetElement.TilesetElement(this, {
           tilesetType: "tree",
-          x: _x * 32,
-          y: _y * 32
+          x: _x * this.config.tileSize,
+          y: _y * this.config.tileSize
         });
       }
     }
@@ -1155,12 +1162,17 @@ var game = {
 exports.game = game;
 },{"./controllers":"js/controllers.js","./imports":"js/imports.js","./tileset":"js/tileset.js","./spritelist":"js/spritelist.js","./Class/TilesetElement":"js/Class/TilesetElement.js"}],"js/gameConfig.json":[function(require,module,exports) {
 module.exports = {
-  "waterLevel": .1,
-  "waterOffset": .1,
-  "waterErodeOffset": .045,
-  "treePercentage": .1,
-  "groundOffset": .2,
-  "mapView": 256,
+  "waterLevel": 0.1,
+  "waterOffset": 0.12,
+  "waterErodeOffset": 0.065,
+  "treePercentage": 0.1,
+  "groundOffset": 0.2,
+  "mapView": 32,
+  "tileSize": 32,
+  "fileTileSize": 32,
+  "offsetOneImportance": 1,
+  "offsetTwoImportance": 2,
+  "offsetThreeImportance": 2,
   "seed": null,
   "gameWidth": null,
   "gameHeight": null
@@ -1205,7 +1217,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "51601" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50905" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

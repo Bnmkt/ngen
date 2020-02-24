@@ -27,17 +27,17 @@ export const game = {
         this.canvas.height = h
         this.ctx = this.canvas.getContext("2d")
         this.controllers.init(this)
-        this.seed = this.config.seed?this.imports.str2seed(this.config.seed):(Math.random())
+        this.seed = this.config.seed?(parseInt(this.config.seed).toString() !== "NaN")?parseInt(this.config.seed):this.imports.str2seed(this.config.seed):this.imports.str2seed(Math.random().toString(36).substring(7))
         this.datas.offsetOne = new this.imports.SimplexNoise(this.seed)
         this.datas.offsetTwo = new this.imports.SimplexNoise(this.seed*Math.PI)
         this.datas.offsetThree = new this.imports.SimplexNoise(this.seed/Math.PI)
-        for(let y = 0;y < this.canvas.height/32; y++){
+        for(let y = 0;y < this.canvas.height/this.config.tileSize; y++){
             this.datas.map["base"][y] = [];
-            for(let x = 0;x < this.canvas.width/32; x++){
+            for(let x = 0;x < this.canvas.width/this.config.tileSize; x++){
                 const offsetOne = this.datas.offsetOne.noise2D((x+this.datas.viewport.x)/this.config.mapView, (y+this.datas.viewport.y)/this.config.mapView)
                 const offsetTwo = this.datas.offsetTwo.noise2D((x+this.datas.viewport.x)/this.config.mapView, (y+this.datas.viewport.y)/this.config.mapView)
                 const offsetThree = this.datas.offsetThree.noise2D((x+this.datas.viewport.x)/this.config.mapView, (y+this.datas.viewport.y)/this.config.mapView)
-                const nVal = (offsetOne+offsetTwo*2*offsetThree*2)/2
+                const nVal = (offsetOne*this.config.offsetOneImportance+offsetTwo*this.config.offsetTwoImportance*offsetThree*this.config.offsetThreeImportance)/2
                 //const nVal = offsetOne
                 let tileType;
                 let filter;
@@ -52,8 +52,15 @@ export const game = {
                     tileType="sand"
                 }else if(nVal < .6){
                     tileType="grass"
+                    filter=`brightness(${100-(nVal-.6)*40}%)`
+                }else if(nVal < 1.5){
+                    tileType="rock"
+                    filter=`hue-rotate(${-(nVal-.6)*60}deg) brightness(${100-(nVal-.6)*60}%)`
+                }else{
+                    tileType="rock"
+                    filter=`brightness(200)`
                 }
-                this.datas.map["base"][y].push(new TilesetElement(this, {"tilesetType": tileType, x:x*32, y:y*32, filter}))
+                this.datas.map["base"][y].push(new TilesetElement(this, {"tilesetType": tileType, x:x*this.config.tileSize, y:y*this.config.tileSize, filter}))
             }   
         }
         for(let y = 0;y < this.datas.map["base"].length; y++){
@@ -61,7 +68,7 @@ export const game = {
             for(let x = 0;x < this.datas.map["base"][y].length; x++){
                 this.datas.map["el"][y][x] = null
                 if(!this.datas.map["base"][y+1]) continue
-                if(this.datas.map["base"][y+1][x].tilesetType==="grass" && Math.random()>1-this.config.treePercentage) this.datas.map["el"][y][x] = new TilesetElement(this,{tilesetType:"tree", x:x*32, y:y*32}) 
+                if(this.datas.map["base"][y+1][x].tilesetType==="grass" && Math.random()>1-this.config.treePercentage) this.datas.map["el"][y][x] = new TilesetElement(this,{tilesetType:"tree", x:x*this.config.tileSize, y:y*this.config.tileSize}) 
             }   
         }
         console.log(this)
