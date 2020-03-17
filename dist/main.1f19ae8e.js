@@ -693,7 +693,7 @@ var tileset = {
   },
   "rock": {
     spriteName: "terrain",
-    spriteX: 0,
+    spriteX: 5,
     spriteY: 0,
     x: +0,
     y: +0
@@ -881,8 +881,8 @@ function () {
           dw = _this$sprite$drawable2[7],
           dh = _this$sprite$drawable2[8];
 
-      this.game.ctx.save();
-      this.game.ctx.filter = this.filter || "none";
+      this.game.ctx.save(); //this.game.ctx.filter = this.filter || "none"
+
       this.game.ctx.drawImage(image, sx, sy, sw, sh, this.x, this.y, dw, dh);
       this.game.ctx.restore();
     }
@@ -1067,40 +1067,34 @@ var game = {
     this.ctx = this.canvas.getContext("2d");
     this.controllers.init(this);
     this.seed = this.config.seed ? parseInt(this.config.seed).toString() !== "NaN" ? parseInt(this.config.seed) : this.imports.str2seed(this.config.seed) : this.imports.str2seed(Math.random().toString(36).substring(7));
-    this.datas.offsetOne = new this.imports.SimplexNoise(this.seed);
-    this.datas.offsetTwo = new this.imports.SimplexNoise(this.seed * Math.PI);
-    this.datas.offsetThree = new this.imports.SimplexNoise(this.seed / Math.PI);
+    this.datas.offsetGlobal = new this.imports.SimplexNoise(this.seed);
+    this.datas.offsetMountain = new this.imports.SimplexNoise(this.seed * Math.PI);
+    this.datas.offsetDetails = new this.imports.SimplexNoise(this.seed / Math.PI);
 
     for (var y = 0; y < this.canvas.height / this.config.tileSize; y++) {
       this.datas.map["base"][y] = [];
 
       for (var x = 0; x < this.canvas.width / this.config.tileSize; x++) {
-        var offsetOne = this.datas.offsetOne.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
-        var offsetTwo = this.datas.offsetTwo.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
-        var offsetThree = this.datas.offsetThree.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
-        var nVal = (offsetOne * this.config.offsetOneImportance + offsetTwo * this.config.offsetTwoImportance * offsetThree * this.config.offsetThreeImportance) / 2; //const nVal = offsetOne
+        var offsetOne = this.datas.offsetGlobal.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
+        var offsetTwo = this.datas.offsetMountain.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
+        var offsetThree = this.datas.offsetDetails.noise2D((x + this.datas.viewport.x) / this.config.mapView, (y + this.datas.viewport.y) / this.config.mapView);
+        var tileHeight = (offsetOne * this.config.offsetOneImportance + offsetTwo * this.config.offsetTwoImportance * offsetThree * this.config.offsetThreeImportance) / 2; //const nVal = offsetOne
 
         var tileType = void 0;
         var filter = void 0;
 
-        if (nVal <= this.config.waterLevel - this.config.waterOffset) {
-          //nVal*=-offsetOne
+        if (tileHeight <= this.config.waterLevel - this.config.waterOffset) {
           tileType = "water";
-          filter = "hue-rotate(".concat(340 + (10 - Math.min(-.0001, nVal) * 10), "deg) brightness(").concat(100 + Math.min(-.0001, nVal) * 50, "%)");
-        } else if (nVal < this.config.waterLevel) {
+        } else if (tileHeight < this.config.waterLevel) {
           tileType = "water";
-          filter = "hue-rotate(-10deg)";
-        } else if (nVal < this.config.waterLevel + this.config.waterErodeOffset) {
+        } else if (tileHeight < this.config.waterLevel + this.config.waterErodeOffset) {
           tileType = "sand";
-        } else if (nVal < .6) {
+        } else if (tileHeight < .6) {
           tileType = "grass";
-          filter = "brightness(".concat(100 - (nVal - .6) * 40, "%)");
-        } else if (nVal < 1.5) {
+        } else if (tileHeight < 1.5) {
           tileType = "rock";
-          filter = "hue-rotate(".concat(-(nVal - .6) * 60, "deg) brightness(").concat(100 - (nVal - .6) * 60, "%)");
         } else {
           tileType = "rock";
-          filter = "brightness(200)";
         }
 
         this.datas.map["base"][y].push(new _TilesetElement.TilesetElement(this, {
@@ -1162,18 +1156,18 @@ var game = {
 exports.game = game;
 },{"./controllers":"js/controllers.js","./imports":"js/imports.js","./tileset":"js/tileset.js","./spritelist":"js/spritelist.js","./Class/TilesetElement":"js/Class/TilesetElement.js"}],"js/gameConfig.json":[function(require,module,exports) {
 module.exports = {
-  "waterLevel": 0.1,
+  "waterLevel": 0.4,
   "waterOffset": 0.12,
   "waterErodeOffset": 0.065,
   "treePercentage": 0.1,
   "groundOffset": 0.2,
-  "mapView": 32,
-  "tileSize": 32,
+  "mapView": 128,
+  "tileSize": 16,
   "fileTileSize": 32,
   "offsetOneImportance": 1,
   "offsetTwoImportance": 2,
   "offsetThreeImportance": 2,
-  "seed": null,
+  "seed": 295963,
   "gameWidth": null,
   "gameHeight": null
 };
@@ -1217,7 +1211,7 @@ var parent = module.bundle.parent;
 if ((!parent || !parent.isParcelRequire) && typeof WebSocket !== 'undefined') {
   var hostname = "" || location.hostname;
   var protocol = location.protocol === 'https:' ? 'wss' : 'ws';
-  var ws = new WebSocket(protocol + '://' + hostname + ':' + "50905" + '/');
+  var ws = new WebSocket(protocol + '://' + hostname + ':' + "45073" + '/');
 
   ws.onmessage = function (event) {
     checkedAssets = {};

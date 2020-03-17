@@ -15,7 +15,7 @@ export class GameElement {
         if (!this.displayed) return false
         const [image, sx, sy, sw, sh, dx, dy, dw, dh] = this.sprite.drawableObj()
         this.game.ctx.save()
-        this.game.ctx.filter = this.filter||"none"
+            //this.game.ctx.filter = this.filter || "none"
         this.game.ctx.drawImage(image, sx, sy, sw, sh, this.x, this.y, dw, dh)
         this.game.ctx.restore()
     }

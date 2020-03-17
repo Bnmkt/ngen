@@ -16,19 +16,19 @@ export const tileset = {
     },
     "rock": {
         spriteName: "terrain",
-        spriteX: 0,
+        spriteX: 5,
         spriteY: 0,
         x: +0,
         y: +0
     },
-    "deepwater":{
+    "deepwater": {
         spriteName: "water",
         spriteX: 6,
         spriteY: 1,
         x: +0,
         y: +0
     },
-    "water":{
+    "water": {
         spriteName: "lowwater",
         spriteX: 6,
         spriteY: 1,
